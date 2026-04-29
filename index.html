@@ -192,7 +192,7 @@
             };
         }
 
-        // Flood Fill Optimizado (Evita Out of Memory usando Uint32 y Pila plana)
+        // Flood Fill Optimizado con Tolerancia para bordes perfectos
         function floodFill(startX, startY, fillCol) {
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const buf = new Uint32Array(imageData.data.buffer);
@@ -202,14 +202,29 @@
             const targetPos = startY * width + startX;
             const targetColor = buf[targetPos];
 
-            // Si el color es el mismo o si es un borde negro (muy oscuro)
+            // Si el color es el mismo, no hacer nada
             if (targetColor === fillCol) return;
-            const r = targetColor & 0xff;
-            const g = (targetColor >> 8) & 0xff;
-            const b = (targetColor >> 16) & 0xff;
-            if (r < 60 && g < 60 && b < 60) return;
 
-            // Pila plana de enteros para evitar consumo de memoria por objetos
+            // Extraer componentes del color inicial para comparar con tolerancia
+            const tr = targetColor & 0xff;
+            const tg = (targetColor >> 8) & 0xff;
+            const tb = (targetColor >> 16) & 0xff;
+
+            // Si se hace clic en un borde negro/muy oscuro, no pintar
+            if (tr < 80 && tg < 80 && tb < 80) return;
+
+            const tolerance = 60; // Margen para absorber grises suaves del anti-alias
+
+            // Función para verificar similitud de color
+            const isSimilar = (color) => {
+                const r = color & 0xff;
+                const g = (color >> 8) & 0xff;
+                const b = (color >> 16) & 0xff;
+                return Math.abs(r - tr) < tolerance && 
+                       Math.abs(g - tg) < tolerance && 
+                       Math.abs(b - tb) < tolerance;
+            };
+
             const stack = new Int32Array(width * height);
             let stackPtr = 0;
             stack[stackPtr++] = targetPos;
@@ -219,7 +234,7 @@
                 const x = pos % width;
                 const y = (pos / width) | 0;
 
-                if (buf[pos] === targetColor) {
+                if (isSimilar(buf[pos])) {
                     buf[pos] = fillCol;
 
                     if (x > 0) stack[stackPtr++] = pos - 1;

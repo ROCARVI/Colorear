@@ -48,7 +48,7 @@
         canvas {
             max-width: 100%;
             max-height: 100%;
-            image-rendering: auto;
+            image-rendering: pixelated; /* Mantiene bordes limpios */
         }
         
         .btn-ui { transition: all 0.2s; box-shadow: 0 4px 0 #1e40af; }
@@ -67,41 +67,41 @@
         </div>
         <div class="flex gap-4 items-center">
             <button id="prevBtn" class="btn-ui bg-blue-500 text-white px-6 py-2 rounded-xl font-bold text-lg">⬅ Anterior</button>
-            <span id="pageIndicator" class="bg-blue-50 text-blue-800 px-6 py-2 rounded-xl font-bold border-2 border-blue-200 min-w-[100px] text-center">1 / 14</span>
+            <span id="pageIndicator" class="bg-blue-100 text-blue-800 px-6 py-2 rounded-xl font-bold border-2 border-blue-200 min-w-[100px] text-center">1 / 14</span>
             <button id="nextBtn" class="btn-ui bg-blue-500 text-white px-6 py-2 rounded-xl font-bold text-lg">Siguiente ➡</button>
         </div>
     </div>
 
     <div class="w-full max-w-7xl flex gap-6 h-[calc(100vh-170px)]">
         
-        <!-- Palette -->
-        <div class="w-36 bg-white rounded-3xl p-4 shadow-xl flex flex-col items-center gap-4 overflow-y-auto no-scrollbar border-r-4 border-blue-50">
+        <!-- Paleta Izquierda -->
+        <div class="w-36 bg-white rounded-3xl p-4 shadow-xl flex flex-col items-center gap-4 border-r-4 border-blue-50 overflow-hidden">
             <p class="text-xs font-black text-blue-400 uppercase tracking-widest">Colores</p>
-            <div id="palette" class="grid grid-cols-2 gap-3 pb-6"></div>
+            <div id="palette" class="grid grid-cols-2 gap-3 pb-6 overflow-y-auto no-scrollbar"></div>
         </div>
 
-        <!-- Drawing Workspace -->
+        <!-- Área de Dibujo -->
         <div class="flex-1 flex flex-col gap-4">
             <div id="canvasWrapper" class="canvas-container flex-1 bg-white">
                 <canvas id="mainCanvas"></canvas>
             </div>
 
-            <!-- Bottom Controls -->
+            <!-- Controles Inferiores -->
             <div class="flex justify-between items-center bg-white p-4 rounded-3xl shadow-lg border-t-4 border-green-50">
                 <div class="flex items-center gap-4 bg-gray-50 px-5 py-2 rounded-2xl border border-gray-100">
                     <div id="currentColorPreview" class="w-10 h-10 rounded-full border-4 border-white shadow-md" style="background-color: #FF0000;"></div>
-                    <p class="font-bold text-gray-500 text-sm">Pincel Cargado</p>
+                    <p class="font-bold text-gray-500 text-sm">Pincel Listo</p>
                 </div>
                 <div class="flex gap-4">
-                    <button id="clearBtn" class="bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-600 px-8 py-2 rounded-xl font-bold transition-all border border-gray-200">Limpiar Hoja</button>
-                    <button id="exportBtn" class="btn-save text-white px-12 py-2 rounded-xl font-bold text-xl">💾 Guardar mi Obra</button>
+                    <button id="clearBtn" class="bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-600 px-8 py-2 rounded-xl font-bold transition-all">Limpiar</button>
+                    <button id="exportBtn" class="btn-save text-white px-12 py-2 rounded-xl font-bold text-xl">💾 Guardar mi Dibujo</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-12 left-1/2 -translate-x-1/2 bg-green-600 text-white px-8 py-4 rounded-2xl shadow-2xl opacity-0 transition-all pointer-events-none font-bold text-lg transform translate-y-10">
-        ✅ Dibujo guardado como dibujo_proferoy
+    <div id="toast" class="fixed bottom-12 left-1/2 -translate-x-1/2 bg-green-600 text-white px-8 py-4 rounded-2xl shadow-2xl opacity-0 transition-all pointer-events-none font-bold text-lg">
+        ✅ Guardado como dibujo_proferoy
     </div>
 
     <script>
@@ -115,7 +115,6 @@
         ];
 
         const imageSources = Array.from({length: 14}, (_, i) => `${i + 1}.png`);
-
         let currentIndex = 0;
         let currentUint32 = 0xFF0000FF; 
         
@@ -124,9 +123,8 @@
         const paletteEl = document.getElementById('palette');
         const colorPreview = document.getElementById('currentColorPreview');
 
-        // Global Buffer for stack to avoid Out of Memory
-        const MAX_PIXELS = 1000 * 1000;
-        const fillStack = new Int32Array(MAX_PIXELS);
+        // Memoria fija para el algoritmo de relleno (Pila)
+        const stack = new Int32Array(1000 * 1000);
 
         function hexToUint32(hex) {
             const r = parseInt(hex.slice(1, 3), 16);
@@ -166,13 +164,13 @@
                 const x = (canvas.width / 2) - (img.width / 2) * scale;
                 const y = (canvas.height / 2) - (img.height / 2) * scale;
                 
-                ctx.imageSmoothingEnabled = true;
+                // Desactivar suavizado para bordes de balde perfectos
+                ctx.imageSmoothingEnabled = false;
                 ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
                 document.getElementById('pageIndicator').innerText = `${currentIndex + 1} / ${imageSources.length}`;
             };
         }
 
-        // Fast Scanline Flood Fill Algorithm
         function floodFill(startX, startY, fillCol) {
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const pixels = new Uint32Array(imageData.data.buffer);
@@ -182,71 +180,38 @@
             const startPos = startY * width + startX;
             const targetColor = pixels[startPos];
 
+            // Si el píxel ya es del color elegido, no hacer nada
             if (targetColor === fillCol) return;
 
-            // Border detection (tolerance for dark lines)
-            const r = targetColor & 0xff, g = (targetColor >> 8) & 0xff, b = (targetColor >> 16) & 0xff;
-            if (r < 75 && g < 75 && b < 75) return;
+            // Detección de bordes (si es muy oscuro, es borde negro)
+            const tr = targetColor & 0xff, tg = (targetColor >> 8) & 0xff, tb = (targetColor >> 16) & 0xff;
+            if (tr < 50 && tg < 50 && tb < 50) return;
 
             let stackPtr = 0;
-            fillStack[stackPtr++] = startX;
-            fillStack[stackPtr++] = startY;
+            stack[stackPtr++] = startPos;
 
-            const tolerance = 65;
-            const targetR = r, targetG = g, targetB = b;
+            const tolerance = 60; // Tolerancia para absorber grises suaves del anti-alias
 
             function matches(p) {
                 const c = pixels[p];
-                const pr = c & 0xff, pg = (c >> 8) & 0xff, pb = (c >> 16) & 0xff;
-                return Math.abs(pr - targetR) < tolerance && 
-                       Math.abs(pg - targetG) < tolerance && 
-                       Math.abs(pb - targetB) < tolerance;
+                const r = c & 0xff, g = (c >> 8) & 0xff, b = (c >> 16) & 0xff;
+                return Math.abs(r - tr) < tolerance && 
+                       Math.abs(g - tg) < tolerance && 
+                       Math.abs(b - tb) < tolerance;
             }
 
             while (stackPtr > 0) {
-                const y = fillStack[--stackPtr];
-                const x = fillStack[--stackPtr];
+                const pos = stack[--stackPtr];
+                const x = pos % width;
+                const y = (pos / width) | 0;
 
-                let curPos = y * width + x;
-                while (y >= 0 && matches(curPos)) {
-                    y--;
-                    curPos -= width;
-                }
-                curPos += width;
-                y++;
+                if (matches(pos)) {
+                    pixels[pos] = fillCol;
 
-                let reachLeft = false;
-                let reachRight = false;
-
-                while (y < height && matches(curPos)) {
-                    pixels[curPos] = fillCol;
-
-                    if (x > 0) {
-                        if (matches(curPos - 1)) {
-                            if (!reachLeft) {
-                                fillStack[stackPtr++] = x - 1;
-                                fillStack[stackPtr++] = y;
-                                reachLeft = true;
-                            }
-                        } else {
-                            reachLeft = false;
-                        }
-                    }
-
-                    if (x < width - 1) {
-                        if (matches(curPos + 1)) {
-                            if (!reachRight) {
-                                fillStack[stackPtr++] = x + 1;
-                                fillStack[stackPtr++] = y;
-                                reachRight = true;
-                            }
-                        } else {
-                            reachRight = false;
-                        }
-                    }
-
-                    y++;
-                    curPos += width;
+                    if (x > 0) stack[stackPtr++] = pos - 1;
+                    if (x < width - 1) stack[stackPtr++] = pos + 1;
+                    if (y > 0) stack[stackPtr++] = pos - width;
+                    if (y < height - 1) stack[stackPtr++] = pos + width;
                 }
             }
             ctx.putImageData(imageData, 0, 0);
@@ -293,11 +258,7 @@
             
             const toast = document.getElementById('toast');
             toast.style.opacity = "1";
-            toast.style.transform = "translateY(0) translateX(-50%)";
-            setTimeout(() => {
-                toast.style.opacity = "0";
-                toast.style.transform = "translateY(10px) translateX(-50%)";
-            }, 3000);
+            setTimeout(() => toast.style.opacity = "0", 3000);
         };
 
         window.onload = () => {

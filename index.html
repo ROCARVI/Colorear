@@ -17,15 +17,14 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Paleta ensanchada un 30% más */
         .sidebar-palette {
-            width: 170px; /* Ensanchado */
+            width: 175px; /* Ensanchado un 30% más */
             flex-shrink: 0;
         }
 
         .color-dot {
-            width: 54px;
-            height: 54px;
+            width: 52px;
+            height: 52px;
             border-radius: 16px;
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -60,7 +59,6 @@
             display: block;
         }
         
-        /* Botones alargados en lateral derecho */
         .btn-side {
             transition: all 0.2s;
             display: flex;
@@ -73,7 +71,7 @@
             border-radius: 20px;
             font-weight: 800;
             text-transform: uppercase;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             letter-spacing: 0.05em;
         }
         .btn-save { background-color: #10b981; color: white; box-shadow: 0 6px 0 #065f46; }
@@ -112,21 +110,18 @@
 
     <main class="flex-1 flex gap-5 overflow-hidden">
         
-        <!-- Lateral Izquierdo: Paleta Ensanchada -->
         <aside class="sidebar-palette bg-white rounded-[40px] p-5 shadow-sm border-2 border-blue-50 flex flex-col items-center shrink-0">
             <span class="text-[10px] font-black text-blue-300 uppercase mb-4 tracking-widest">Colores</span>
             <div id="palette" class="grid grid-cols-2 gap-4 overflow-y-auto no-scrollbar pb-4">
-                <!-- Colores insertados por JS -->
+                <!-- Colors injected by JS -->
             </div>
         </aside>
 
-        <!-- Área Central: El Dibujo (Protagonista) -->
         <section class="flex-1 canvas-container">
             <canvas id="mainCanvas"></canvas>
         </section>
 
-        <!-- Lateral Derecho: Acciones Ensanchadas para botones alargados -->
-        <aside class="w-48 flex flex-col gap-6 shrink-0">
+        <aside class="w-52 flex flex-col gap-6 shrink-0">
             <div class="bg-white p-4 rounded-[30px] border-2 border-blue-50 shadow-sm flex flex-col gap-4">
                 <button id="exportBtn" class="btn-side btn-save">
                     <span class="text-2xl">💾</span>
@@ -153,18 +148,18 @@
         const colors = [
             { name: "Rojo", hex: "#FF0000" },
             { name: "Naranja", hex: "#FF8C00" },
-            { name: "Amarillo Huevo", hex: "#ffd91c" },
-            { name: "Amarillo Claro", hex: "#f0f24e" },
+            { name: "Amarillo Huevo", hex: "#FFD700" },
+            { name: "Amarillo Claro", hex: "#FFFFE0" },
             { name: "Verde Lima", hex: "#32CD32" },
-            { name: "Verde Claro", hex: "#9af22e" },
-            { name: "Verde Oscuro", hex: "#269e26" },
+            { name: "Verde Claro", hex: "#90EE90" },
+            { name: "Verde Oscuro", hex: "#006400" },
             { name: "Turquesa", hex: "#40E0D0" },
             { name: "Menta", hex: "#98FB98" },
-            { name: "Celeste", hex: "#86dff7" },
-            { name: "Azul Cielo", hex: "#00BFFF" },
-            { name: "Azul Mar", hex: "#0239de" },
-            { name: "Púrpura", hex: "#7019c2" },
-            { name: "Lila", hex: "#e08be0" },
+            { name: "Celeste", hex: "#ADD8E6" },
+            { name: "Azul Cielo", hex: "#87CEEB" },
+            { name: "Azul Mar", hex: "#000080" },
+            { name: "Púrpura", hex: "#800080" },
+            { name: "Lila", hex: "#C8A2C8" },
             { name: "Fucsia", hex: "#FF00FF" },
             { name: "Rosado Claro", hex: "#FFB6C1" },
             { name: "Color Piel", hex: "#FFDBAC" },
@@ -182,15 +177,16 @@
         const paletteEl = document.getElementById('palette');
         const colorPreview = document.getElementById('currentColorPreview');
 
-        // Pila de memoria estática para evitar "Out of Memory"
         const MAX_STACK = 1000 * 1000;
         const stack = new Int32Array(MAX_STACK);
 
         function hexToUint32(hex) {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            // Formato ABGR (Little Endian para canvas en navegadores)
+            // FIX: Ensure hex is a string (handles previous bug)
+            const colorStr = (typeof hex === 'string') ? hex : hex.hex;
+            const r = parseInt(colorStr.slice(1, 3), 16);
+            const g = parseInt(colorStr.slice(3, 5), 16);
+            const b = parseInt(colorStr.slice(5, 7), 16);
+            // ABGR format for Canvas Little Endian
             return (255 << 24) | (b << 16) | (g << 8) | r;
         }
 
@@ -209,20 +205,18 @@
                 };
                 paletteEl.appendChild(dot);
             });
+            // FIX: Accessing .hex property to avoid "slice is not a function"
             currentUint32 = hexToUint32(colors[0].hex);
         }
 
         function loadImage(index) {
             const img = new Image();
-            // Esto es CRUCIAL para que funcione en GitHub
             img.crossOrigin = "anonymous"; 
             img.src = imageSources[index];
             
             img.onload = () => {
-                // Resolución interna alta (independiente de como se vea en pantalla)
                 canvas.width = 1000;
                 canvas.height = 1000;
-                
                 ctx.fillStyle = "white";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
@@ -245,17 +239,15 @@
             const startPos = startY * width + startX;
             const targetColor = pixels[startPos];
 
-            // 1. Evitar pintar sobre el mismo color
             if (targetColor === fillCol) return;
             
-            // 2. Evitar pintar sobre bordes negros (muy oscuros)
+            // Border detection
             const r = targetColor & 0xff, g = (targetColor >> 8) & 0xff, b = (targetColor >> 16) & 0xff;
             if (r < 85 && g < 85 && b < 85) return;
 
             let stackPtr = 0;
             stack[stackPtr++] = startPos;
 
-            // Tolerancia para absorber grises suaves del dibujo original
             const tolerance = 70;
 
             function matches(p) {
@@ -275,7 +267,7 @@
                     pixels[pos] = fillCol;
 
                     if (x > 0 && matches(pos - 1)) {
-                        pixels[pos - 1] = fillCol; // Pintado preventivo para reducir stack
+                        pixels[pos - 1] = fillCol; 
                         stack[stackPtr++] = pos - 1;
                     }
                     if (x < width - 1 && matches(pos + 1)) {
@@ -291,7 +283,6 @@
                         stack[stackPtr++] = pos + width;
                     }
                 }
-                // Emergencia para evitar crash
                 if (stackPtr > MAX_STACK - 10) break;
             }
             ctx.putImageData(imageData, 0, 0);
@@ -299,20 +290,15 @@
 
         const handleInput = (e) => {
             const rect = canvas.getBoundingClientRect();
-            
-            // Obtener coordenadas del evento (soporta ratón y táctil)
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             
-            // Este es el cálculo crítico que solía fallar:
-            // Mapeamos el clic relativo al tamaño VISUAL del canvas hacia su tamaño INTERNO (1000x1000)
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
             
             const x = Math.floor((clientX - rect.left) * scaleX);
             const y = Math.floor((clientY - rect.top) * scaleY);
 
-            // Solo pintar si el clic está dentro del canvas real
             if (x >= 0 && x < canvas.width && y >= 0 && y < canvas.height) {
                 floodFill(x, y, currentUint32);
             }
@@ -320,7 +306,7 @@
 
         canvas.addEventListener('mousedown', handleInput);
         canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Evita scroll mientras pintas
+            e.preventDefault(); 
             handleInput(e);
         }, { passive: false });
 
@@ -338,7 +324,7 @@
 
         document.getElementById('exportBtn').onclick = () => {
             const link = document.createElement('a');
-            link.download = `proferoy_pinta_${Date.now()}.png`;
+            link.download = `dibujo_proferoy_${Date.now()}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
             

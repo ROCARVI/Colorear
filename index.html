@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coloreando con ProfeRoy Pro</title>
+    <title>Pinta Pro - ProfeRoy</title>
+    <link rel="icon" href="favicon_profe_roy.ico" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Quicksand', sans-serif;
-            background-color: #f0f9ff;
+            background-color: #f3f4f6; /* Gris muy claro */
             overflow: hidden; /* Evita scroll en la laptop */
             user-select: none;
             touch-action: none;
@@ -81,30 +82,35 @@
         .btn-clear:active { transform: translateY(4px); box-shadow: 0 2px 0 #94a3b8; }
 
         .nav-btn {
-            background: #3b82f6; /* bg-blue-500 */
+            background: #ef4444; /* Rojo */
             color: white;
             border: none;
             padding: 10px 32px; /* Más alargados horizontalmente */
             border-radius: 12px;
             font-weight: bold;
             transition: all 0.2s;
-            box-shadow: 0 4px 0 #2563eb; /* Sombra azul más oscuro */
+            box-shadow: 0 4px 0 #dc2626; /* Sombra roja más oscuro */
         }
         .nav-btn:hover { 
-            background: #2563eb; /* bg-blue-600 */
+            background: #dc2626; /* Rojo oscuro al hacer hover */
         }
         .nav-btn:active {
             transform: translateY(4px);
-            box-shadow: 0 0 0 #2563eb;
+            box-shadow: 0 0 0 #dc2626;
         }
     </style>
 </head>
 <body class="h-screen flex flex-col p-3 md:p-5">
 
     <header class="w-full flex justify-between items-center mb-4 px-2 h-14 shrink-0">
-        <div class="flex items-center gap-2">
-            <span class="text-4xl">🎨</span>
-            <h1 class="text-2xl font-extrabold text-blue-600">ProfeRoy <span class="text-orange-500">PINTA</span></h1>
+        <div class="flex items-center gap-3">
+            <!-- Favicon como logo con enlace a ProfeRoy.net -->
+            <a href="https://www.proferoy.net" target="_blank" rel="noopener noreferrer" title="Visitar ProfeRoy.net" class="hover:scale-105 transition-transform duration-200">
+                <img src="favicon_profe_roy.ico" alt="Logo ProfeRoy" class="w-12 h-12 object-contain">
+            </a>
+            <h1 class="text-3xl font-extrabold tracking-tight">
+                <span class="text-red-600">PINTA</span><span class="text-slate-800">PRO</span>
+            </h1>
         </div>
         
         <div class="flex items-center gap-4 bg-white px-4 py-2 rounded-2xl shadow-sm border-2 border-blue-50">
@@ -354,7 +360,12 @@
 
         document.getElementById('exportBtn').onclick = () => {
             const link = document.createElement('a');
-            link.download = `dibujo_proferoy_${Date.now()}.png`;
+            
+            // Generar número aleatorio de 4 cifras (entre 1000 y 9999)
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            
+            // Nuevo formato de prefijo con número aleatorio
+            link.download = `pintapro_proferoy_${randomNum}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
             

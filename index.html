@@ -81,14 +81,22 @@
         .btn-clear:active { transform: translateY(4px); box-shadow: 0 2px 0 #94a3b8; }
 
         .nav-btn {
-            background: white;
-            border: 3px solid #e0f2fe;
-            padding: 10px 20px;
-            border-radius: 15px;
+            background: #3b82f6; /* bg-blue-500 */
+            color: white;
+            border: none;
+            padding: 10px 32px; /* Más alargados horizontalmente */
+            border-radius: 12px;
             font-weight: bold;
             transition: all 0.2s;
+            box-shadow: 0 4px 0 #2563eb; /* Sombra azul más oscuro */
         }
-        .nav-btn:hover { background: #f0f9ff; border-color: #bae6fd; }
+        .nav-btn:hover { 
+            background: #2563eb; /* bg-blue-600 */
+        }
+        .nav-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #2563eb;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col p-3 md:p-5">
@@ -99,10 +107,10 @@
             <h1 class="text-2xl font-extrabold text-blue-600">ProfeRoy <span class="text-orange-500">PINTA</span></h1>
         </div>
         
-        <div class="flex items-center gap-4 bg-white px-5 py-2 rounded-2xl shadow-sm border-2 border-blue-50">
-            <button id="prevBtn" class="nav-btn text-xl">⬅</button>
+        <div class="flex items-center gap-4 bg-white px-4 py-2 rounded-2xl shadow-sm border-2 border-blue-50">
+            <button id="prevBtn" class="nav-btn text-2xl">⬅</button>
             <span id="pageIndicator" class="text-blue-800 font-black min-w-[120px] text-center uppercase text-sm tracking-tighter">Dibujo 1 / 14</span>
-            <button id="nextBtn" class="nav-btn text-xl">➡</button>
+            <button id="nextBtn" class="nav-btn text-2xl">➡</button>
         </div>
 
         <!-- Muestra el color seleccionado -->
